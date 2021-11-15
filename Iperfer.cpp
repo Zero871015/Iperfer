@@ -150,7 +150,7 @@ void runServer(int port)
     {
         if((numbytes = recv(new_fd, &buffer[0], buffer.size(), 0)) == -1)
             errorMsg(8);
-        num++;
+        num += numbytes;
         for(auto b : buffer)
         {
             // 'E' means end of data
@@ -162,7 +162,7 @@ void runServer(int port)
             }
         }
     }
-
+    num /= 1000;
     // compute and show the rate
     double diff = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
     cout << "sent=" << num << " KB rate=" << double(num / 1000 * 8 / diff) << " Mbps" << endl;
@@ -207,7 +207,7 @@ void runClient(string hostname, int port, int time)
     char chunk[1000] = {0};
     while(diff < time)
     {
-        if(send(sockfd, chunk, 1000, 0) == -1)
+        if(send(sockfd, chunk, MAX_BUF, 0) == -1)
             errorMsg(8);
         diff = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
         num++;
