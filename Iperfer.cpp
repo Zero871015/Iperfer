@@ -21,12 +21,14 @@ void runClient(string, int, int);
 
 int main(int argc, char *argv[])
 {
+    // arguments parser
     if(argc <= 1)
     {
         errorMsg(1);
     }
 
     string temp(argv[1]);
+    // client part
     if(temp == "-c")
     {
         string hostname = "";
@@ -57,9 +59,7 @@ int main(int argc, char *argv[])
                 time = atoi(argv[i]);
             }
             else
-            {
                 errorMsg(1);
-            }
         }
         if(hostname == "" || port == -1)
             errorMsg(1);
@@ -68,6 +68,7 @@ int main(int argc, char *argv[])
 
         runClient(hostname, port, time);
     }
+    // server part
     else if(temp == "-s")
     {
         if(argc != 4 || !isdigit(argv[3][0]))
@@ -90,6 +91,7 @@ int main(int argc, char *argv[])
     return 0;    
 }
 
+// show error message and shut down
 void errorMsg(int type)
 {
     if(type == 1)
@@ -111,6 +113,7 @@ void errorMsg(int type)
     exit(-1);
 }
 
+// run server on given port
 void runServer(int port)
 {
     int sockfd, new_fd;
@@ -118,7 +121,8 @@ void runServer(int port)
     socklen_t sin_size = 0;
     int numbytes;
     vector<char> buffer(MAX_BUF);
-
+    
+    // create socket
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         errorMsg(3);
 
@@ -127,15 +131,18 @@ void runServer(int port)
     my_addr.sin_addr.s_addr = INADDR_ANY;
     memset(&(my_addr.sin_zero), 0, 8);
 
+    // bind socket and listen request
     if(bind(sockfd, (struct sockaddr *)&my_addr, sizeof(struct sockaddr)) == -1)
         errorMsg(4);
     if(listen(sockfd, 5) == -1)
         errorMsg(5);
 
+    // accept connect
     sin_size = sizeof(struct sockaddr_in);
     if((new_fd = accept(sockfd, (struct sockaddr *)&client_addr, &sin_size)) == -1)
         errorMsg(6);
     
+    // counting the time and number of data
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
     int num = 0;
     bool flag = false;
@@ -146,6 +153,7 @@ void runServer(int port)
         num++;
         for(auto b : buffer)
         {
+            // 'E' means end of data
             if(b == 'E')
             {
                 flag = true;
@@ -154,24 +162,29 @@ void runServer(int port)
             }
         }
     }
+
+    // compute and show the rate
     double diff = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
     cout << "sent=" << num << " KB rate=" << double(num / 1000 * 8 / diff) << " Mbps" << endl;
     
     close(new_fd);
 }
 
+// run client, connect to server with given hostname, port, and sent data during the given time
 void runClient(string hostname, int port, int time)
 {
     int sockfd;
     struct sockaddr_in server_addr;
     string ip;
 
+    // create socket
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         errorMsg(3);
     
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
     
+    // using DNS to get ip address via hostname
     in_addr *address;
     hostent *record = gethostbyname(hostname.c_str());
     if(record == NULL)
@@ -182,10 +195,12 @@ void runClient(string hostname, int port, int time)
     
     server_addr.sin_addr.s_addr = inet_addr(ip.c_str());
     memset(&(server_addr.sin_zero), 0, 8);
+
+    // connect to server
     if(connect(sockfd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1)
         errorMsg(6);
     
-
+    // counting time and number of data
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
     double diff = 0;
     int num = 0;
@@ -197,10 +212,10 @@ void runClient(string hostname, int port, int time)
         diff = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
         num++;
     }
+    // 'E' means end of data
     send(sockfd, "E", 1, 0);
     
-    
-    
+    // compute and show the rate
     cout << "sent=" << num << " KB rate=" << double(num / 1000 * 8 / diff) << " Mbps" << endl;
     close(sockfd);
 }
