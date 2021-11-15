@@ -165,7 +165,7 @@ void runServer(int port)
     num /= 1000;
     // compute and show the rate
     double diff = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
-    cout << "sent=" << num << " KB rate=" << double(num / 1000 * 8 / diff) << " Mbps" << endl;
+    cout << "received=" << num << " KB rate=" << double(num / 1000 * 8 / diff) << " Mbps" << endl;
     
     close(new_fd);
 }
